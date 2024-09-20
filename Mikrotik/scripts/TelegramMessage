@@ -1,0 +1,13 @@
+# Do not forget to register your bot first with @BotFather and put token below
+# Do not forget to point the target for messages as well, @userinfobot will be helpful
+
+:global TelegramMessage
+:local TelegramToken "1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ123456789"
+:local TelegramChatID "987654321"
+
+:local hostname [/system/identity/get name];
+
+:if ($TelegramMessage != "" ) do={
+    /tool fetch url="https://api.telegram.org/bot$TelegramToken/sendMessage\3Fchat_id=$TelegramChatID&text=$hostname: $TelegramMessage" output=none
+    :global TelegramMessage ""
+}

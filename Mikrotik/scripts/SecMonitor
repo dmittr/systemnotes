@@ -1,0 +1,54 @@
+# If you want to ignore any mac - just add it with disabled state, see below
+# /ip dhcp-server lease add comment=ISPRouter disabled=yes mac-address=CA:BC:DE:F0:12:34
+# Do not forget to turn on scheduler for that, see below
+# /system scheduler add interval=30s name=SecMonitorRun on-event=SecMonitor
+
+:global secMonitorMacMentioned
+:global secMonitorAddressList
+:global secMonitorAddressListMentioned
+
+:local secMonitorMacMentionedNew
+:local secMonitorAddressListMentionedNew
+
+:foreach macObject in=[ /ip/arp/find ] do={
+    :local mac [ /ip/arp/get $macObject mac-address ]
+    :if ([:len $mac] > 2 ) do={
+        :local leaseComment ""
+        :local leaseHost "no lease yet"
+        :local leases ([/ip/dhcp-server/lease/find mac-address=$mac])
+        :if ([:len $leases] > 0 ) do={
+            :foreach leaseItem in=$leases do={
+                :set leaseComment (:put [/ip/dhcp-server/lease/get $leaseItem comment ] )
+                :set leaseHost (:put [/ip/dhcp-server/lease/get $leaseItem host-name ] )
+            }
+        } 
+        :if ($leaseComment = "") do={
+            if ([:find $secMonitorMacMentioned $mac]<1) do={
+                :global TelegramMessage ("Unknown mac detected: ".$mac." (".$leaseHost.")")
+                /system script run "TelegramMessage"
+            }
+            :set secMonitorMacMentionedNew ($secMonitorMacMentionedNew." ".$mac)
+        }
+    }
+}
+:set secMonitorMacMentioned $secMonitorMacMentionedNew
+:local listObject ([ /ip/firewall/address-list/find ])
+:if ([:len $listObject] > 0 ) do={
+    :foreach listItem in=$listObject do={
+        :if ([:len $secMonitorAddressList] > 0 ) do={
+            :foreach list in=[:toarray $secMonitorAddressList ] do={
+                :local listName [/ip/firewall/address-list/get $listItem list ]
+                :if ($list = $listName) do={
+                    :local address [/ip/firewall/address-list/get $listItem address ]
+                    if ([:find $secMonitorAddressListMentioned $address]<1) do={
+                        :global TelegramMessage ("New ip in ".$list." - ".$address)
+                        :put $TelegramMessage
+                        /system script run "TelegramMessage"
+                    }
+                    :set secMonitorAddressListMentionedNew ($secMonitorAddressListMentionedNew." ".$address)
+                }
+            }
+        }
+    }
+}
+:set secMonitorAddressListMentioned $secMonitorAddressListMentionedNew

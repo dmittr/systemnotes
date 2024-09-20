@@ -1,0 +1,28 @@
+# 1. install https://github.com/Winand/mikrotik-json-parser as JParseFunctions script
+# 2. Do not forget to set env-vars - see SetEnvVars
+# 3. Do not forget to set scheduler using command below
+# /system scheduler add interval=15m name=HetznerDNSUpdateRun on-event=HetznerDNSUpdate start-time=startup
+
+:global hetznerDNSapiURL
+:global hetznerDNSapiKey
+:global hetznerDNSzone
+:global hetznerDNShost
+:local currentIP [:resolve myip.opendns.com server=208.67.222.222];
+:local ttl "60"
+:local hetznerName ($hetznerDNShost.".".$hetznerDNSzone)
+:local domainIP [:resolve $hetznerName]     
+
+
+:if ($currentIP != $domainIP) do={
+    /system script run "JParseFunctions"; global JSONLoad; global JSONLoads; global JSONUnload
+    :local apiZone ([/tool/fetch "$hetznerDNSapiURL/zones?search_name=$hetznerDNSzone" http-method=get http-header-field="Auth-API-Token:$hetznerDNSapiKey" output=user as-value]->"data");
+    :local zoneID ([$JSONLoads $apiZone]->"zones"->0->"id")
+    :local apiRecord ([/tool/fetch "$hetznerDNSapiURL/records?zone_id=$zoneID&name=$hetznerDNShost" http-method=get http-header-field="Auth-API-Token:$hetznerDNSapiKey" output=user as-value]->"data");
+    :local recordID ([$JSONLoads $apiRecord]->"records"->0->"id")
+    :local payload "{\"zone_id\": \"$zoneID\",\"type\": \"A\",\"name\": \"$hetznerDNShost\",\"value\": \"$currentIP\",\"ttl\": $([:tonum $ttl])}";
+    :local apiResponse ([/tool/fetch "$hetznerDNSapiURL/records/$recordID" http-method=put http-header-field="Content-Type:application/json,Auth-API-Token:$hetznerDNSapiKey" http-data=$payload output=user as-value]->"status");
+    :global TelegramMessage ("Change IP from ".$domainIP." to ".$currentIP." (result ".$apiResponse." for ".$hetznerName.")")
+    /system script run "TelegramMessage"
+    $JSONUnload
+}
+

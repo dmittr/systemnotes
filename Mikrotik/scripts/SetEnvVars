@@ -1,0 +1,9 @@
+# Do not forget to update your values
+# Do not forget to activete it on-boot using scheduler, see command below
+# /system scheduler add name=StartupRoutine2 on-event="/system script run SetEnvVars\n:delay 30000ms\n:global TelegramMessage \"System was restarted\"\n/system script run TelegramMessage" start-time=startup
+
+:global hetznerDNSapiURL "https://dns.hetzner.com/api/v1";
+:global hetznerDNSapiKey "MyTokenFromHetznerDNSService"
+:global hetznerDNSzone "hetzner-zone.name"
+:global hetznerDNShost "somehostname"
+:global secMonitorAddressList "portknock-pass,test123"

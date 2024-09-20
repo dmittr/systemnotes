@@ -1,0 +1,4 @@
+/ip firewall filter add action=accept chain=input comment=Portknock-Accept src-address-list=portknock-pass
+/ip firewall filter add action=add-src-to-address-list address-list=portknock-pass address-list-timeout=1m chain=input comment=PortKnock-Stage3 dst-port=9123 in-interface-list=WAN protocol=tcp src-address-list=portknock2
+/ip firewall filter add action=add-src-to-address-list address-list=portknock2 address-list-timeout=10s chain=input comment=PortKnock-Stage2 dst-port=5678 in-interface-list=WAN protocol=tcp src-address-list=portknock1
+/ip firewall filter add action=add-src-to-address-list address-list=portknock1 address-list-timeout=10s chain=input comment=PortKnock-Stage1 dst-port=1234 in-interface-list=WAN protocol=tcp
