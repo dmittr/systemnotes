@@ -1,0 +1,12 @@
+[Unit]
+Description=Notification after system just booted
+Requires=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/telegram.env
+ExecStart=bash -c '/bin/curl -F chat_id=${TGCHATID} -F text="$(hostnamectl hostname): System just started ($(uptime -p))"  https://api.telegram.org/bot${TGBOTID}/sendMessage 2>&1 > /curl.log'
+
+[Install]
+WantedBy=multi-user.target
